@@ -165,6 +165,11 @@ This project is a compact but practical demonstration of an Airflow-based data e
 
 ---
 
-## Author
+## Future Works 
+1. Add more features to the pipeline.
+2. Add an aerting system.
+3. Add a cloud storage integration.
+4. Add incremental loading support.
+5. Add schema validation before loading.
 
 Built as a hands-on data engineering project for learning and demonstrating ETL orchestration with Apache Airflow.
