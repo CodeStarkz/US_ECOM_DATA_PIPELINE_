@@ -142,21 +142,6 @@ Processed data is loaded into the MySQL warehouse:
 - Warehouse loading into MySQL
 - Backup of processed data
 - Containerized local execution
-
----
-
-## Future Enhancements
-
-Potential improvements for this project include:
-
-- schema validation before loading
-- data quality checks
-- dynamic file discovery
-- logging and alerting
-- parameterized storage paths
-- cloud storage integration
-- incremental loading support
-
 ---
 
 ## Summary
