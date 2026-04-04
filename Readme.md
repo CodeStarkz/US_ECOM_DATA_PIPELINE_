@@ -2,7 +2,9 @@
 
 An end-to-end **Apache Airflow** data pipeline for ingesting, transforming, loading, and archiving U.S. e-commerce transaction data.
 
-This project demonstrates a practical ETL workflow built with Docker, Airflow, Pandas, and MySQL. It uses local folders as staged storage layers to simulate a modern data pipeline structure.
+This project demonstrates a practical ETL workflow built with Docker, Airflow, Pandas,SMTP and MySQL. It uses local folders as staged storage layers to simulate a modern data pipeline structure.
+
+And send Mail for Failure/ Sucess of task.
 
 ---
 
@@ -15,6 +17,7 @@ The pipeline automates the movement of a CSV file through multiple processing st
 - **Data transformation** for type cleanup and standardization
 - **Warehouse loading** into MySQL
 - **Backup archiving** for processed files
+- ** **Mail** Faor Failure or Success of Task
 
 The design reflects a simple but realistic data engineering workflow that can be extended to cloud-based storage systems later.
 
@@ -41,6 +44,8 @@ The DAG runs in the following sequence:
 
 5. **Move processed file to backup storage**
    - Archives the final transformed file for retention
+6. ** Sent Email**
+   - For failure or Sucess of Task
 
 ---
 
@@ -152,7 +157,7 @@ This project is a compact but practical demonstration of an Airflow-based data e
 
 ## Future Works 
 1. Add more features to the pipeline.
-2. Add an aerting system.
+2. Add an alerting system. (DONE)
 3. Add a cloud storage integration.
 4. Add incremental loading support.
 5. Add schema validation before loading.
