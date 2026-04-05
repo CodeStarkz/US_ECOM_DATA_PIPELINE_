@@ -1,21 +1,6 @@
 from airflow.decorators import dag, task
 from pendulum import datetime
 import os
-from airflow.providers.smtp.operators.smtp import EmailOperator
-from airflow.utils.email import send_email
-import posiedan
-
-
-
-# 1. Define the failure callback function outside the DAG
-def notify_failure(context):
-    subject = f"FAILED: Task {context['task_instance'].task_id} in {context['dag'].dag_id}"
-    to_send=os.getenv("failure_report_email_id")
-    subject_for_email="FAILURE ALERT!!!"
-    html_content = f"The pipeline failed at step: {context['task_instance'].task_id}. Check Airflow logs."
-    # sending email for failure report
-    send_email(to= to_send,
-               subject=subject_for_email, html_content=html_content)
 
 
 @dag(
@@ -29,8 +14,7 @@ def notify_failure(context):
         'email': ['20mecp01@iiitdmj.ac.in','abhirajpoot01011998@gmail.com'],
         'email_on_failure': True,
         'email_on_retry': False,
-    },
-    on_failure_callback=notify_failure
+    }
 )
 def us_ecom_pipeline():
     @task
@@ -41,6 +25,7 @@ def us_ecom_pipeline():
         path = input_path_directory + input_file_name
         pd.read_csv(path, encoding="latin1")  # Just checking if it exists/readable
         kwargs['ti'].xcom_push(key="Retailer_file_path_name", value=path)
+        kwargs["ti"].xcom_push(key="task_status",value="Completed")
         return "File found"
 
     @task
@@ -54,6 +39,7 @@ def us_ecom_pipeline():
         dest= dest_path + dest_file_name
         ti.xcom_push(key="destination_path_file_name", value=dest)
         shutil.move(src, dest)
+        kwargs["ti"].xcom_push(key="task_status", value="Completed")
         return "File moved"
 
     @task
@@ -74,6 +60,7 @@ def us_ecom_pipeline():
         df.to_csv(out_path, index=False)
         os.remove(src)
         ti.xcom_push(key="transformed_path_file_name", value=out_path)
+        kwargs["ti"].xcom_push(key="task_status", value="Completed")
         return "Data transformed"
 
     @task
@@ -86,6 +73,7 @@ def us_ecom_pipeline():
         df = pd.read_csv(path, encoding="latin1")
         df.to_sql("us_ecom_data", con=engine,
                   if_exists="replace", index=False)
+        kwargs["ti"].xcom_push(key="task_status", value="Completed")
         return "Loaded"
 
     @task
@@ -95,26 +83,33 @@ def us_ecom_pipeline():
                                      task_ids="transform_data")
         dest = "/opt/airflow/Back_Up_Cold_Storage/data_transformed.csv"
         shutil.move(src, dest)
+        kwargs["ti"].xcom_push(key="task_status", value="Completed")
         return "Backup complete"
+        return ""
 
-    # 2. Define EmailOperator as a STANDALONE task (not a @task function)
-    send_success_email = EmailOperator(
-        task_id='send_success_notification',
-        to="email",
-        subject='ETL Pipeline Success: {{ dag.dag_id }}',
-        html_content="""
-            <h3>Pipeline Run Successful</h3>
-            <p><b>DAG:</b> {{ dag.dag_id }}</p>
-            <p><b>Execution Date:</b> {{ ds }}</p>
-        """
-    )
     @task
-    def data_quality_report_to_DA_team(**kwargs):
-        import posiedan as ps
-        input_path_for_posiedan= kwargs["ti"].xcom_pull(key="destination_path_file_name",
-                                                        task_ids="move_file_from_data_to_intermediate_storage")
-        output_path_for_posiedan= "/opt/airflow/S3_Blob_Storage/profilig_report_directory"
+    def send_status_email(**kwargs):
+        import os  # Added missing import
+        from airflow.utils.email import send_email
 
+        ti = kwargs['ti']
+        # Verify the key "task_status" matches what you pushed in the previous task
+        last_task_status = ti.xcom_pull(task_ids="load_data_into_warehouse_db", key="task_status")
+
+        if last_task_status == "Completed":
+            send_email(
+                to=os.getenv("success_report_email_id"),
+                subject=f"Success Report: {last_task_status}",
+                html_content="Pipeline Successfully Executed, No error detected"
+            )
+        else:
+            send_email(
+                to=os.getenv("failure_report_email_id"),
+                subject="FAILURE ALERT!!!",
+                html_content="Failure Detected, Please check the dashboard and logs for more detailed information"
+            )
+
+        return "Mail sent"
 
     # 3. Setting up the pipeline flow correctly
     step1 = check_for_file_from_Retailer_to_organisation()
@@ -122,9 +117,10 @@ def us_ecom_pipeline():
     step3 = transform_data()
     step4 = load_data_into_warehouse_db()
     step5 = move_file_from_intermediate_to_backup()
+    step6 = send_status_email()
 
     # Link the tasks
-    step1 >> step2 >> step3 >> step4 >> step5 >> send_success_email
+    step1 >> step2 >> step3 >> step4 >> step5 >> step6
 
 
 us_ecom_pipeline()
