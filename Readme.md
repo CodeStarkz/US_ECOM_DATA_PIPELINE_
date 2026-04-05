@@ -70,6 +70,7 @@ These names are intentionally preserved from the project structure to keep the p
 - **PostgreSQL** — Airflow metadata database
 - **Redis** — Celery message broker
 - **Docker Compose** — local containerized setup
+- **SMTP** - For mailing
 
 ## Dataset Notes
 
