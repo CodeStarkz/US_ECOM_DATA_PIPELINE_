@@ -17,7 +17,7 @@ The pipeline automates the movement of a CSV file through multiple processing st
 - **Data transformation** for type cleanup and standardization
 - **Warehouse loading** into MySQL
 - **Backup archiving** for processed files
-- ** **Mail** Faor Failure or Success of Task
+- **Mail** Faor Failure or Success of Task
 
 The design reflects a simple but realistic data engineering workflow that can be extended to cloud-based storage systems later.
 
